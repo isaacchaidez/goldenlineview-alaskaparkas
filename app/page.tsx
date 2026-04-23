@@ -111,7 +111,7 @@ export default function HomePage() {
               Interested in a Custom Parka?
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-200">
-              Contact Goldenline View, Inc. to discuss custom parka designs,
+              Contact Goldenline View, Inc at 907-378-2991 or by email goldenline.view@gmail.com. to discuss custom parka designs,
               sizes, colors, and specialty requests.
             </p>
           </div>
