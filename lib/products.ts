@@ -31,6 +31,8 @@ export const products = [
   },
 ]
 
+export const PRODUCTS = products
+
 export const sizes = ["Small", "Medium", "Large"] as const
 
 export type Product = (typeof products)[number]
