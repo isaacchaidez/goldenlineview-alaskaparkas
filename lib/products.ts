@@ -37,3 +37,10 @@ export const sizes = ["Small", "Medium", "Large"] as const
 
 export type Product = (typeof products)[number]
 export type Size = (typeof sizes)[number]
+
+export function formatPrice(price: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(price)
+}
