@@ -19,19 +19,25 @@ export function Header() {
         </Link>
 
         <nav className="hidden gap-8 text-sm font-medium text-slate-700 md:flex">
-          <Link href="/" className="hover:text-slate-950">
-            Home
-          </Link>
-          <Link href="#about" className="hover:text-slate-950">
-            About
-          </Link>
-          <Link href="#parkas" className="hover:text-slate-950">
-            Parkas
-          </Link>
-          <Link href="#contact" className="hover:text-slate-950">
-            Contact
-          </Link>
-        </nav>
+  <Link href="/" className="hover:text-slate-950">
+    Home
+  </Link>
+  <Link href="/#about" className="hover:text-slate-950">
+    About
+  </Link>
+  <Link href="/#parkas" className="hover:text-slate-950">
+    Parkas
+  </Link>
+  <Link href="/shop" className="hover:text-slate-950">
+    Shop
+  </Link>
+  <Link href="/cart" className="hover:text-slate-950">
+    Cart
+  </Link>
+  <Link href="/#contact" className="hover:text-slate-950">
+    Contact
+  </Link>
+</nav>
       </div>
     </header>
   )
