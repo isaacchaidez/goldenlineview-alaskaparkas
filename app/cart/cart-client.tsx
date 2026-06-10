@@ -6,10 +6,11 @@ import { useEffect, useMemo, useState, useTransition } from "react"
 import { CreditCard, PaymentForm } from "react-square-web-payments-sdk"
 
 import { createSquarePayment } from "@/app/actions/square"
-import { products } from "@/lib/products"
+import { products, Size } from "@/lib/products"
 
 type CartItem = {
   id: string
+  size: Size
   quantity: number
 }
 
@@ -23,6 +24,7 @@ export function CartClient() {
 
   useEffect(() => {
     const savedCart = localStorage.getItem("goldenline-cart")
+
     if (savedCart) {
       setCart(JSON.parse(savedCart))
     }
@@ -33,18 +35,22 @@ export function CartClient() {
     localStorage.setItem("goldenline-cart", JSON.stringify(updatedCart))
   }
 
-  function addItem(productId: string) {
+  function addItem(productId: string, size: Size) {
     const updatedCart = cart.map((item) =>
-      item.id === productId ? { ...item, quantity: item.quantity + 1 } : item
+      item.id === productId && item.size === size
+        ? { ...item, quantity: item.quantity + 1 }
+        : item
     )
 
     saveCart(updatedCart)
   }
 
-  function removeItem(productId: string) {
+  function removeItem(productId: string, size: Size) {
     const updatedCart = cart
       .map((item) =>
-        item.id === productId ? { ...item, quantity: item.quantity - 1 } : item
+        item.id === productId && item.size === size
+          ? { ...item, quantity: item.quantity - 1 }
+          : item
       )
       .filter((item) => item.quantity > 0)
 
@@ -52,8 +58,17 @@ export function CartClient() {
   }
 
   function clearCart() {
-    saveCart([])
+    setCart([])
     localStorage.removeItem("goldenline-cart")
+    setMessage("")
+  }
+
+  function finishSuccessfulOrder(totalCharged: number) {
+    localStorage.removeItem("goldenline-cart")
+    setCart([])
+    setMessage(
+      `Your payment of $${totalCharged}.00 was successful. Goldenline View, Inc. will follow up with your custom parka order details.`
+    )
   }
 
   const total = useMemo(() => {
@@ -78,18 +93,41 @@ export function CartClient() {
 
       {cart.length === 0 ? (
         <div className="rounded-3xl border bg-slate-50 p-10 text-center">
-          <h2 className="text-2xl font-semibold text-slate-950">
-            Your cart is empty.
-          </h2>
-          <p className="mt-3 text-slate-600">
-            Add a parka from the shop to begin your order.
-          </p>
-          <Link
-            href="/shop"
-            className="mt-6 inline-flex rounded-full bg-slate-950 px-6 py-3 font-semibold text-white hover:bg-slate-700"
-          >
-            Go to Shop
-          </Link>
+          {message ? (
+            <>
+              <h2 className="text-3xl font-semibold text-slate-950">
+                Thank you for your order!
+              </h2>
+
+              <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-slate-600">
+                {message}
+              </p>
+
+              <Link
+                href="/shop"
+                className="mt-6 inline-flex rounded-full bg-slate-950 px-6 py-3 font-semibold text-white hover:bg-slate-700"
+              >
+                Continue Shopping
+              </Link>
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl font-semibold text-slate-950">
+                Your cart is empty.
+              </h2>
+
+              <p className="mt-3 text-slate-600">
+                Add a parka from the shop or homepage to begin your order.
+              </p>
+
+              <Link
+                href="/shop"
+                className="mt-6 inline-flex rounded-full bg-slate-950 px-6 py-3 font-semibold text-white hover:bg-slate-700"
+              >
+                Go to Shop
+              </Link>
+            </>
+          )}
         </div>
       ) : (
         <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
@@ -101,7 +139,7 @@ export function CartClient() {
 
               return (
                 <div
-                  key={cartItem.id}
+                  key={`${cartItem.id}-${cartItem.size}`}
                   className="flex gap-5 rounded-3xl border bg-white p-5 shadow-sm"
                 >
                   <div className="relative h-32 w-28 shrink-0 overflow-hidden rounded-2xl bg-slate-100">
@@ -118,13 +156,20 @@ export function CartClient() {
                       <h2 className="text-xl font-semibold text-slate-950">
                         {product.name}
                       </h2>
-                      <p className="mt-1 text-slate-600">$60.00 each</p>
+
+                      <p className="mt-1 text-slate-600">
+                        ${product.price}.00 each
+                      </p>
+
+                      <p className="mt-1 text-sm font-medium text-slate-700">
+                        Size: {cartItem.size}
+                      </p>
                     </div>
 
                     <div className="mt-4 flex items-center gap-3">
                       <button
                         type="button"
-                        onClick={() => removeItem(product.id)}
+                        onClick={() => removeItem(product.id, cartItem.size)}
                         className="flex h-9 w-9 items-center justify-center rounded-full border bg-white text-lg"
                       >
                         -
@@ -136,7 +181,7 @@ export function CartClient() {
 
                       <button
                         type="button"
-                        onClick={() => addItem(product.id)}
+                        onClick={() => addItem(product.id, cartItem.size)}
                         className="flex h-9 w-9 items-center justify-center rounded-full border bg-white text-lg"
                       >
                         +
@@ -167,16 +212,16 @@ export function CartClient() {
 
             {!applicationId || !locationId ? (
               <div className="mt-6 rounded-2xl bg-white p-4 text-sm text-red-600">
-                Square is not configured. Make sure `.env.local` is in the root
-                folder and restart npm run dev.
+                Square is not configured. Make sure the Netlify environment
+                variables are added and the site is redeployed.
               </div>
             ) : (
               <div className="mt-6">
                 <PaymentForm
                   applicationId={applicationId}
                   locationId={locationId}
-                  cardTokenizeResponseReceived={async (token) => {
-                    if (!token.token) {
+                  cardTokenizeResponseReceived={async (tokenResult) => {
+                    if (!("token" in tokenResult) || !tokenResult.token) {
                       setMessage("Payment token failed. Please try again.")
                       return
                     }
@@ -186,14 +231,11 @@ export function CartClient() {
                     startTransition(async () => {
                       try {
                         const result = await createSquarePayment({
-                          sourceId: token.token,
+                          sourceId: tokenResult.token,
                           cart,
                         })
 
-                        clearCart()
-                        setMessage(
-                          `Payment successful. Total charged: $${result.total}.00`
-                        )
+                        finishSuccessfulOrder(result.total)
                       } catch (error) {
                         console.error(error)
                         setMessage(
