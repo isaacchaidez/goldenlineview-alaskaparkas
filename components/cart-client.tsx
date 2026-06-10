@@ -14,6 +14,10 @@ type CartItem = {
   quantity: number
 }
 
+type SquareTokenSuccess = {
+  token: string
+}
+
 export function CartClient() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [message, setMessage] = useState("")
@@ -212,16 +216,21 @@ export function CartClient() {
 
             {!applicationId || !locationId ? (
               <div className="mt-6 rounded-2xl bg-white p-4 text-sm text-red-600">
-                Square is not configured. Make sure .env.local is in the root
-                folder and restart npm run dev.
+                Square is not configured. Make sure the Netlify environment
+                variables are added and the site is redeployed.
               </div>
             ) : (
               <div className="mt-6">
                 <PaymentForm
                   applicationId={applicationId}
                   locationId={locationId}
-                  cardTokenizeResponseReceived={async (token) => {
-                    if (!token.token) {
+                  cardTokenizeResponseReceived={async (tokenResult) => {
+                    const squareTokenResult =
+                      tokenResult as Partial<SquareTokenSuccess>
+
+                    const sourceId = squareTokenResult.token
+
+                    if (!sourceId) {
                       setMessage("Payment token failed. Please try again.")
                       return
                     }
@@ -231,7 +240,7 @@ export function CartClient() {
                     startTransition(async () => {
                       try {
                         const result = await createSquarePayment({
-                          sourceId: token.token,
+                          sourceId,
                           cart,
                         })
 
