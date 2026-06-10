@@ -14,6 +14,10 @@ type CartItem = {
   quantity: number
 }
 
+type SquareTokenSuccess = {
+  token: string
+}
+
 export function CartClient() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [message, setMessage] = useState("")
@@ -221,7 +225,10 @@ export function CartClient() {
                   applicationId={applicationId}
                   locationId={locationId}
                   cardTokenizeResponseReceived={async (tokenResult) => {
-                    if (!("token" in tokenResult) || !tokenResult.token) {
+                    const squareTokenResult =
+                      tokenResult as Partial<SquareTokenSuccess>
+
+                    if (!squareTokenResult.token) {
                       setMessage("Payment token failed. Please try again.")
                       return
                     }
@@ -231,7 +238,7 @@ export function CartClient() {
                     startTransition(async () => {
                       try {
                         const result = await createSquarePayment({
-                          sourceId: tokenResult.token,
+                          sourceId: squareTokenResult.token,
                           cart,
                         })
 
